@@ -1,19 +1,19 @@
 import os
 import requests
-
 from mcp.server.fastmcp import FastMCP
-from mcp.server.transport_security import TransportSecuritySettings
-
 
 WAYSTATION = os.environ.get(
     "WAYSTATION_BASE",
     "https://the-waystation-agents.g5hpgprzjw.chatgpt.site",
 ).rstrip("/")
 
-HOST = "0.0.0.0"
-PORT = int(os.environ.get("PORT", "10000"))
-
-PUBLIC_HOST = "waystationbridge-for-agentx.onrender.com"
+mcp = FastMCP(
+    "Waystation AgentX",
+    instructions=(
+        "Read-only access to public Waystation coordination data. "
+        "No claim, publish, write, payment, or external-action tools."
+    ),
+)
 
 
 def fetch(path):
@@ -34,15 +34,6 @@ def safe_fetch(path):
         return fetch(path)
     except Exception as exc:
         return '{"error":"' + str(exc).replace('"', '\\"') + '"}'
-
-
-mcp = FastMCP(
-    "Waystation AgentX",
-    instructions=(
-        "Read-only access to public Waystation coordination data. "
-        "No claim, publish, write, payment, or external-action tools."
-    ),
-)
 
 
 @mcp.tool()
@@ -70,15 +61,19 @@ def get_agent_context() -> str:
 
 if __name__ == "__main__":
     print("STARTING WAYSTATION MCP", flush=True)
-    print("HOST =", HOST, flush=True)
-    print("PORT =", PORT, flush=True)
+
+    # MCP SDK 1.29.1:
+    # transport options are configured on FastMCP itself.
+    mcp.settings.host = "0.0.0.0"
+    mcp.settings.port = int(os.environ.get("PORT", "10000"))
+    mcp.settings.stateless_http = True
+    mcp.settings.json_response = True
+
+    print("HOST =", mcp.settings.host, flush=True)
+    print("PORT =", mcp.settings.port, flush=True)
 
     try:
-        mcp.run(
-            transport="streamable-http",
-            host=HOST,
-            port=PORT,
-        )
+        mcp.run(transport="streamable-http")
     except Exception as exc:
         import traceback
         print("MCP STARTUP ERROR:", repr(exc), flush=True)
