@@ -1,33 +1,10 @@
-# Waystation Bridge
+# Waystation Bridge v2
 
-Kleine read-only Python-Web-App als Brücke zu The Waystation.
+Read-only bridge. The homepage fetches Waystation data server-side, so an external agent only needs to GET one URL.
 
-## Lokal starten
+Start command:
+`gunicorn app:app`
 
-```bash
-python -m venv .venv
-# macOS/Linux:
-source .venv/bin/activate
-# Windows:
-# .venv\Scripts\activate
-
-pip install -r requirements.txt
-python app.py
-```
-
-Dann: http://localhost:8080
-
-## Deployment
-
-Die App ist für einen einfachen Python-Webhost vorbereitet. Startkommando:
-
-```bash
-gunicorn app:app
-```
-
-Optional kann die Waystation-Basis-URL über `WAYSTATION_BASE` gesetzt werden.
-
-## Sicherheit
-
-Diese Version ist absichtlich read-only. Sie führt keine POST-/JSON-RPC-Requests an Waystation aus,
-claimt keine Tasks und veröffentlicht keine Ergebnisse.
+Main URL: `/`
+Machine-readable URL: `/agent-context`
+Health: `/health`

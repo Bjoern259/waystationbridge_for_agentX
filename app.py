@@ -9,58 +9,82 @@ WAYSTATION = os.environ.get(
     "https://the-waystation-agents.g5hpgprzjw.chatgpt.site"
 ).rstrip("/")
 
-HTML = """<!doctype html>
+TEMPLATE = """<!doctype html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Waystation Bridge</title>
 <style>
-body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px}
-button{padding:12px 18px;border:0;border-radius:8px;cursor:pointer}
-pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:8px}
+body{font-family:system-ui,sans-serif;max-width:1000px;margin:32px auto;padding:0 18px}
+h1{margin-bottom:4px}
+.status{padding:10px;border-radius:8px;background:#f4f4f4}
+section{margin-top:22px}
+pre{white-space:pre-wrap;overflow:auto;background:#f4f4f4;padding:14px;border-radius:8px}
+a{word-break:break-all}
 .small{color:#666}
 </style>
 </head>
 <body>
 <h1>The Waystation Bridge</h1>
-<p>Read-only Bridge für <code>/api/brief</code> und <code>/api/tasks</code>.</p>
-<button onclick="loadData()">Aktuelle Waystation-Daten laden</button>
-<p class="small">Diese Version kann nichts claimen und nichts veröffentlichen.</p>
-<pre id="out">Noch keine Daten geladen.</pre>
-<script>
-async function loadData(){
-  const out=document.getElementById('out');
-  out.textContent='Lade...';
-  try{
-    const r=await fetch('/api/waystation');
-    const data=await r.json();
-    out.textContent=JSON.stringify(data,null,2);
-  }catch(e){out.textContent='Fehler: '+e}
-}
-</script>
+<p class="small">Read-only. Die Daten werden serverseitig von der Bridge abgerufen, damit ein Agent nur diese eine URL öffnen muss.</p>
+<div class="status"><b>Waystation:</b> {{ base }}</div>
+
+<section>
+<h2>Aktueller Brief</h2>
+<pre>{{ brief }}</pre>
+</section>
+
+<section>
+<h2>Aktuelle Tasks</h2>
+<pre>{{ tasks }}</pre>
+</section>
+
+<section>
+<h2>Maschinenlesbarer Zugang</h2>
+<p><a href="/agent-context">/agent-context</a> – kompakte, maschinenlesbare Zusammenfassung.</p>
+</section>
 </body>
 </html>"""
 
-def fetch_json(path):
-    r = requests.get(WAYSTATION + path, timeout=15,
-                     headers={"Accept": "application/json"})
+def fetch(path):
+    r = requests.get(
+        WAYSTATION + path,
+        timeout=20,
+        headers={"Accept": "application/json", "User-Agent": "Waystation-Bridge/2.0"}
+    )
     r.raise_for_status()
-    return r.json()
+    return r.text
+
+def safe_fetch(path):
+    try:
+        return fetch(path)
+    except Exception as e:
+        return '{"error":"' + str(e).replace('"', '\\"') + '"}'
 
 @app.get("/")
 def home():
-    return render_template_string(HTML)
+    # Server-side fetch: the visiting agent only needs to GET this one URL.
+    return render_template_string(
+        TEMPLATE,
+        base=WAYSTATION,
+        brief=safe_fetch("/api/brief"),
+        tasks=safe_fetch("/api/tasks"),
+    )
 
-@app.get("/api/waystation")
-def waystation():
-    result = {"source": WAYSTATION, "read_only": True}
-    for name, path in [("brief", "/api/brief"), ("tasks", "/api/tasks")]:
-        try:
-            result[name] = fetch_json(path)
-        except Exception as e:
-            result[name] = {"error": str(e)}
-    return jsonify(result)
+@app.get("/agent-context")
+def agent_context():
+    return jsonify({
+        "bridge": "The Waystation Bridge",
+        "read_only": True,
+        "purpose": "Expose public Waystation coordination data through one GET URL.",
+        "waystation": WAYSTATION,
+        "brief": safe_fetch("/api/brief"),
+        "tasks": safe_fetch("/api/tasks"),
+        "write_operations": False,
+        "claim_operations": False,
+        "publish_operations": False,
+    })
 
 @app.get("/health")
 def health():
