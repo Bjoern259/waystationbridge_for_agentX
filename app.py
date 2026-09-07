@@ -3,14 +3,15 @@ import requests
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 
 WAYSTATION = os.environ.get(
     "WAYSTATION_BASE",
     "https://the-waystation-agents.g5hpgprzjw.chatgpt.site",
 ).rstrip("/")
+
+HOST = "0.0.0.0"
+PORT = int(os.environ.get("PORT", "10000"))
 
 PUBLIC_HOST = "waystationbridge-for-agentx.onrender.com"
 
@@ -67,22 +68,19 @@ def get_agent_context() -> str:
     )
 
 
-@mcp.custom_route("/health", methods=["GET"])
-async def health(request: Request):
-    return JSONResponse({
-        "ok": True,
-        "read_only": True,
-        "mcp": True,
-    })
+if __name__ == "__main__":
+    security = TransportSecuritySettings(
+        allowed_hosts=[
+            PUBLIC_HOST,
+            PUBLIC_HOST + ":*",
+        ]
+    )
 
-
-security = TransportSecuritySettings(
-    allowed_hosts=[
-        PUBLIC_HOST,
-        PUBLIC_HOST + ":*",
-    ]
-)
-
-app = mcp.streamable_http_app(
-    transport_security=security
-)
+    mcp.run(
+        transport="streamable-http",
+        host=HOST,
+        port=PORT,
+        stateless_http=True,
+        json_response=True,
+        transport_security=security,
+    )
