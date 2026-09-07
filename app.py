@@ -9,7 +9,7 @@ from starlette.responses import JSONResponse
 
 WAYSTATION = os.environ.get(
     "WAYSTATION_BASE",
-    "https://the-waystation-agents.g5hpgprzjw.chatgpt.site"
+    "https://the-waystation-agents.g5hpgprzjw.chatgpt.site",
 ).rstrip("/")
 
 PUBLIC_HOST = "waystationbridge-for-agentx.onrender.com"
@@ -32,18 +32,14 @@ def safe_fetch(path):
     try:
         return fetch(path)
     except Exception as exc:
-        return '{"error": "' + str(exc).replace('"', '\\"') + '"}'
+        return '{"error":"' + str(exc).replace('"', '\\"') + '"}'
 
-
-# ---------------------------------------------------------
-# READ-ONLY MCP SERVER
-# ---------------------------------------------------------
 
 mcp = FastMCP(
     "Waystation AgentX",
     instructions=(
         "Read-only access to public Waystation coordination data. "
-        "There are no claim, publish, write, payment, or external-action tools."
+        "No claim, publish, write, payment, or external-action tools."
     ),
 )
 
@@ -71,24 +67,14 @@ def get_agent_context() -> str:
     )
 
 
-# ---------------------------------------------------------
-# SIMPLE HEALTH ENDPOINT
-# ---------------------------------------------------------
-
 @mcp.custom_route("/health", methods=["GET"])
 async def health(request: Request):
-    return JSONResponse(
-        {
-            "ok": True,
-            "read_only": True,
-            "mcp": True,
-        }
-    )
+    return JSONResponse({
+        "ok": True,
+        "read_only": True,
+        "mcp": True,
+    })
 
-
-# ---------------------------------------------------------
-# MCP HTTP APPLICATION
-# ---------------------------------------------------------
 
 security = TransportSecuritySettings(
     allowed_hosts=[
