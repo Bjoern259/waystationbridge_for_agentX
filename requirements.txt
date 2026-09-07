@@ -1,4 +1,2 @@
 requests
-uvicorn
-starlette
 mcp==1.29.1
