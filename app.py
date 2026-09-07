@@ -69,18 +69,18 @@ def get_agent_context() -> str:
 
 
 if __name__ == "__main__":
-    security = TransportSecuritySettings(
-        allowed_hosts=[
-            PUBLIC_HOST,
-            PUBLIC_HOST + ":*",
-        ]
-    )
+    print("STARTING WAYSTATION MCP", flush=True)
+    print("HOST =", HOST, flush=True)
+    print("PORT =", PORT, flush=True)
 
-    mcp.run(
-        transport="streamable-http",
-        host=HOST,
-        port=PORT,
-        stateless_http=True,
-        json_response=True,
-        transport_security=security,
-    )
+    try:
+        mcp.run(
+            transport="streamable-http",
+            host=HOST,
+            port=PORT,
+        )
+    except Exception as exc:
+        import traceback
+        print("MCP STARTUP ERROR:", repr(exc), flush=True)
+        traceback.print_exc()
+        raise
