@@ -1,6 +1,4 @@
-Flask
 requests
-gunicorn
 uvicorn
 starlette
-mcp>=1.28,<2
+mcp==1.29.1
